@@ -2984,45 +2984,66 @@
                 optionsDiv.appendChild(submitBtn);
                 
                 overlay.classList.add('active');
-            }
-            
-            update(stats, deltaTime) {
-                if (!this.isActive) return;
-                
-                const ctx = this.ctx;
-                ctx.fillStyle = '#f5f5f0';
-                ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-                
-                if (this.currentPhase === 'showing') {
-                    const elapsed = Date.now() - this.animationStart;
-                    const time = elapsed / 1000;
-                    
-                    let allDone = true;
-                    
-                    this.schools.forEach(school => {
-                        if (elapsed > school.showTime && !school.shown) {
-                            school.shown = true;
-                        }
-                        
-                        if (school.shown) {
-                            school.fish.forEach(fish => {
-                                fish.x += fish.speed;
-                                this.drawFish(fish, time);
-                            });
-                            
-                            if (school.fish[school.fish.length - 1].x < this.canvas.width + 100) {
-                                allDone = false;
-                            }
-                        } else {
-                            allDone = false;
-                        }
-                    });
-                    
-                    if (allDone && elapsed > Math.max(...this.schools.map(s => s.showTime)) + 5000) {
-                        this.showAnswerPrompt();
-                    }
+           this.onDown = (e) => { 
+    try {
+        const isTouch = e.type === 'touchstart';
+        if (isTouch) {
+            // 安全检查
+            if (!e.touches || e.touches.length === 0) return;
+            this.touchCount = e.touches.length;
+            if (e.touches.length >= 2) { 
+                this.isHolding = true;
+                if (!this.stabilityTime && this.isActive) {
+                    Sound.start('module3_unstable', 'C1', 0.1);
                 }
-                
+                e.preventDefault();
+            }
+        } else {
+            this.isHolding = true;
+            if (!this.stabilityTime && this.isActive) {
+                Sound.start('module3_unstable', 'C1', 0.1);
+            }
+        }
+    } catch(err) {
+        console.warn('Module3 onDown error:', err);
+    }
+};
+
+this.onUp = (e) => { 
+    try {
+        const isTouch = e.type === 'touchend' || e.type === 'touchcancel';
+        if (isTouch) {
+            // 安全检查
+            const remainingTouches = (e.touches && e.touches.length) || 0;
+            if (remainingTouches < 2) {
+                this.isHolding = false;
+                this.touchCount = remainingTouches;
+                if(this.isActive) Sound.release('module3_unstable');
+            }
+        } else {
+            this.isHolding = false;
+            if(this.isActive) Sound.release('module3_unstable');
+        }
+    } catch(err) {
+        console.warn('Module3 onUp error:', err);
+    }
+};
+
+this.onTouchChange = (e) => {
+    try {
+        if (e.type === 'touchmove' && e.touches && e.touches.length >= 2) {
+            if (!this.isHolding) {
+                this.isHolding = true;
+                if (!this.stabilityTime && this.isActive) {
+                    Sound.start('module3_unstable', 'C1', 0.1);
+                }
+            }
+            e.preventDefault();
+        }
+    } catch(err) {
+        console.warn('Module3 onTouchChange error:', err);
+    }
+};
                 stats.progress = (this.round / this.maxRounds) * 100;
             }
             
