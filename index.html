@@ -2036,9 +2036,24 @@
                 });
             },
             
-            cleanup() {
+             cleanup() {
+                this.isActive = false;
                 this.instances.forEach(instance => {
-                    const { onStart, onMove, onEnd } = instance.canvas.eventListeners || {};
+                    const { listeners, canvas } = instance;
+                    
+                    if (listeners && canvas) {
+                        canvas.removeEventListener('mousedown', listeners.canvasMouseDown);
+                        canvas.removeEventListener('touchstart', listeners.canvasTouchStart);
+                        
+                        document.removeEventListener('mousemove', listeners.docMouseMove);
+                        document.removeEventListener('touchmove', listeners.docTouchMove);
+                        document.removeEventListener('mouseup', listeners.docMouseUp);
+                        document.removeEventListener('touchend', listeners.docTouchEnd);
+                    }
+                });
+                this.instances = [];
+                this.dragging = null;
+            }
 
                     if (onStart) {
                         instance.canvas.removeEventListener('mousedown', onStart);
