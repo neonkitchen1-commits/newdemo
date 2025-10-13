@@ -1829,11 +1829,13 @@
                 }
             ],
             values: {},
+            isActive: false,
             instances: [],
             currentPage: 0,
             dragging: null,
 
             init() {
+                this.isActive = true;
                 this.scents.forEach(scent => {
                     this.values[scent.id] = 0;
                 });
