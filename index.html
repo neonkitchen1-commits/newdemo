@@ -1901,21 +1901,28 @@
             addRadialInteraction(canvas, scentId, instance) {
                 const getPointer = (e) => {
                     const rect = canvas.getBoundingClientRect();
-                    const x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
-                    const y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+                    const clientX = e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX);
+                    const clientY = e.clientY || (e.touches && e.touches[0] && e.touches[0].clientY);
+                    if (!clientX || !clientY) return null;
+                    
+                    const x = clientX - rect.left;
+                    const y = clientY - rect.top;
                     return { x, y };
                 };
                 
                 const onStart = (e) => {
+                    if (!this.isActive) return;
                     this.dragging = scentId;
                     instance.isDragging = true;
                     e.preventDefault();
                 };
                 
                 const onMove = PerformanceUtils.throttle((e) => {
-                    if (this.dragging !== scentId) return;
+                    if (this.dragging !== scentId || !this.isActive) return;
                     
                     const pos = getPointer(e);
+                    if (!pos) return;
+                    
                     const centerX = canvas.width / 2;
                     const centerY = canvas.height / 2;
                     
@@ -1927,7 +1934,8 @@
                     const value = Math.min(100, Math.max(0, (dist / maxDist) * 100));
                     this.values[scentId] = Math.round(value);
                     
-                    document.querySelector(`[data-value="${scentId}"]`).textContent = this.values[scentId];
+                    const valueEl = document.querySelector(`[data-value="${scentId}"]`);
+                    if (valueEl) valueEl.textContent = this.values[scentId];
                     
                     instance.targetIntensity = this.values[scentId] / 100;
                     instance.dragAngle = Math.atan2(dy, dx);
@@ -1946,18 +1954,28 @@
                     }
                 };
                 
-                canvas.addEventListener('mousedown', onStart);
-                canvas.addEventListener('touchstart', onStart, { passive: false });
+                const listeners = {
+                    canvasMouseDown: onStart,
+                    canvasTouchStart: onStart,
+                    docMouseMove: onMove,
+                    docTouchMove: onMove,
+                    docMouseUp: onEnd,
+                    docTouchEnd: onEnd
+                };
                 
-                document.addEventListener('mousemove', onMove);
-                document.addEventListener('touchmove', onMove, { passive: false });
+                canvas.addEventListener('mousedown', listeners.canvasMouseDown);
+                canvas.addEventListener('touchstart', listeners.canvasTouchStart, { passive: false });
                 
-                document.addEventListener('mouseup', onEnd);
-                document.addEventListener('touchend', onEnd);
+                document.addEventListener('mousemove', listeners.docMouseMove);
+                document.addEventListener('touchmove', listeners.docTouchMove, { passive: false });
+                
+                document.addEventListener('mouseup', listeners.docMouseUp);
+                document.addEventListener('touchend', listeners.docTouchEnd);
                 
                 canvas.addEventListener('contextmenu', e => e.preventDefault());
 
-                canvas.eventListeners = { onStart, onMove, onEnd };
+                instance.listeners = listeners;
+                instance.canvas = canvas;
             },
             
             prevPage() {
