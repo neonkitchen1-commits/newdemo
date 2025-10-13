@@ -2036,8 +2036,7 @@
                 });
             },
             
-             cleanup() {
-                this.isActive = false;
+            cleanup() {
                 this.instances.forEach(instance => {
                     const { listeners, canvas } = instance;
                     
