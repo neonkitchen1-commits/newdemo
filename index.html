@@ -1898,7 +1898,7 @@
                 this.instances.forEach(inst => inst.update(deltaTime));
             },
 
-             addRadialInteraction(canvas, scentId, instance) {
+           addRadialInteraction(canvas, scentId, instance) {
                 const getPointer = (e) => {
                     const rect = canvas.getBoundingClientRect();
                     const clientX = e.clientX || (e.touches && e.touches[0] && e.touches[0].clientX);
@@ -1911,8 +1911,17 @@
                 };
                 
                 const onStart = (e) => {
-                    if (!this.isActive) return;
+                    if (!this.isActive) return;  // ← 添加这个检查
                     this.dragging = scentId;
+                    instance.isDragging = true;
+                    e.preventDefault();
+                };
+                
+                const onMove = PerformanceUtils.throttle((e) => {
+                    if (this.dragging !== scentId || !this.isActive) return;  // ← 添加 isActive 检查
+                    
+                    const pos = getPointer(e);
+                    if (!pos) return;  // ← 添加空值检查
                     instance.isDragging = true;
                     e.preventDefault();
                 };
